@@ -1,0 +1,15 @@
+---
+description: Gradion Book Illustration Studio — project constraints
+alwaysApply: true
+---
+
+This is a take-home fullstack app. Keep it small.
+
+- Pipeline is the Colab notebook section "Illustrate a book: The Wind in the Willows" steps 1–5 only.
+- Hard caps, enforced on the server: 2 adult characters, 1 chapter.
+- User-driven steps in order. No auto-retry of Gemini. Send the book once (file + interaction chain).
+- JSON files on disk. Per-project in-process mutex around read–modify–write, not around the API call.
+- `status` is pipeline progress. `stepState` is IDLE | RUNNING. Failed steps stay on the same status with `lastError`.
+- Illustration consistency is image-chat chaining (path A), not attaching portrait bytes.
+- UI must cover app-demo.html (Gradion tokens, screens, running/error/stuck). Polling while RUNNING.
+- Do not implement Veo, Lyria, TTS, SSE, or public deploy.
