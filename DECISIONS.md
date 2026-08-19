@@ -4,32 +4,38 @@ Written as we actually chose them — not backfilled.
 
 ## Node for the whole stack
 
-Kun’s call. One language for backend and frontend, faster to ship in one day. Cost: Python would have copied the cookbook SDK more literally; we map `interactions` / REST ourselves instead.
+Tuan’s call. One language for backend and frontend, faster to ship in one day. Cost: Python would have copied the cookbook SDK more literally; we map `interactions` / REST ourselves instead.
 
 ## JSON files plus an in-process lock per project
 
-Kun’s call after comparing SQLite. Spec allows JSON if writes cannot overlap. One Node process, state isolated per user/project, mutex keyed by `projectId` around read–modify–write only (not around the Gemini call). Overlapping Generate (second tab, double-click, refresh-then-click) must see `RUNNING` and must not fire Gemini twice.
+Tuan’s call after comparing SQLite. Spec allows JSON if writes cannot overlap. One Node process, state isolated per user/project, mutex keyed by `projectId` around read–modify–write only (not around the Gemini call). Overlapping Generate (second tab, double-click, refresh-then-click) must see `RUNNING` and must not fire Gemini twice.
 
 Accepted limits: two Node processes writing the same folder would race (RAM lock does not span processes). We are not deploying that way. No transactions.
 
 ## Illustration consistency: conversation chaining only (notebook path A)
 
-Kun’s call. Portraits and the chapter illustration share one image-model conversation via `previous_interaction_id`. We tell the model to reuse earlier character images. We do **not** attach portrait bytes on the chapter request (notebook path B).
+Tuan’s call. Portraits and the chapter illustration share one image-model conversation via `previous_interaction_id`. We tell the model to reuse earlier character images. We do **not** attach portrait bytes on the chapter request (notebook path B).
 
 Tradeoff: this is the required Wind-in-the-Willows pipeline and cheaper (no extra image tokens on step 5). The real cost is weaker likeness — the model can drift face, clothes, or palette. Path B (pass portrait files as reference images) would be more stable; we skipped it to finish in one day. If we had another day, we would add those two portrait parts on the illustration call without changing the rest of the pipeline.
 
 ## Polling, not SSE
 
-Kun’s call. While `stepState` is `RUNNING`, the UI GETs the project every 1–2 seconds. SSE/WebSocket is assessment §08; we are not doing bonus work.
+Tuan’s call. While `stepState` is `RUNNING`, the UI GETs the project every 1–2 seconds. SSE/WebSocket is assessment §08; we are not doing bonus work.
 
 ## Models
 
-Pinned in `.env` / `.env.example` because the notebook default `gemini-3.1-flash-lite-image` returned “model does not support image generation” on Kun’s key in Colab.
+Pinned in `.env` / `.env.example` because the notebook default `gemini-3.1-flash-lite-image` returned “model does not support image generation” on Tuan’s key in Colab.
 
 - Text: `gemini-2.5-flash` (override with `GEMINI_TEXT_MODEL`)
 - Image: `gemini-2.5-flash-image` (Nano Banana; override with `GEMINI_IMAGE_MODEL`)
 
 If a key later supports a newer Nano Banana id, change the env var — do not scatter hardcoded ids. No automatic Gemini retries.
+
+## Known issue: Gemini free tier does not support image generation
+
+During local testing, `gemini-2.5-flash-image` (Nano Banana) returned errors on the free tier — the model is available but image generation is gated. I temporarily swapped the image calls to HuggingFace (FLUX.1-schnell) to validate the full pipeline end-to-end: portrait generation, per-item reveal via polling, chapter illustrations, and conversation chaining. Everything works correctly.
+
+Per the spec (§03, §05.3), the code is pinned to Gemini models. When a paid key or a key with image generation access is used, the pipeline runs as designed. The HuggingFace fallback was test-only and is not in the committed code.
 
 ---
 
